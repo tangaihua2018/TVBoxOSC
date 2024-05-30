@@ -1,6 +1,7 @@
 package com.github.tvbox.osc.viewmodel;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -19,6 +20,7 @@ import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
+
 import com.github.tvbox.osc.util.thunder.Thunder;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -59,6 +61,8 @@ public class SourceViewModel extends ViewModel {
     public MutableLiveData<AbsXml> quickSearchResult;
     public MutableLiveData<AbsXml> detailResult;
     public MutableLiveData<JSONObject> playResult;
+
+    private final static String TAG = "SourceViewModel";
 
     public SourceViewModel() {
         sortResult = new MutableLiveData<>();
@@ -136,9 +140,11 @@ public class SourceViewModel extends ViewModel {
                     .execute(new AbsCallback<String>() {
                         @Override
                         public String convertResponse(okhttp3.Response response) throws Throwable {
+                            Log.e(TAG, "convertResponse");
                             if (response.body() != null) {
                                 return response.body().string();
                             } else {
+                                Log.e(TAG, "网络请求错误");
                                 throw new IllegalStateException("网络请求错误");
                             }
                         }
@@ -152,6 +158,7 @@ public class SourceViewModel extends ViewModel {
                             } else if (type == 1) {
                                 String json = response.body();
                                 sortXml = sortJson(sortResult, json);
+                                Log.e(TAG, "type = 1, sortxml：" + sortXml);
                             }
                             if (sortXml != null && Hawk.get(HawkConfig.HOME_REC, 0) == 1 && sortXml.list != null && sortXml.list.videoList != null && sortXml.list.videoList.size() > 0) {
                                 ArrayList<String> ids = new ArrayList<>();
@@ -175,6 +182,7 @@ public class SourceViewModel extends ViewModel {
                         public void onError(Response<String> response) {
                             super.onError(response);
                             sortResult.postValue(null);
+                            Log.e(TAG, "响应状态:" + response.code());
                         }
                     });
         } else {

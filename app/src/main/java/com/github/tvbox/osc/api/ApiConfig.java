@@ -81,8 +81,10 @@ public class ApiConfig {
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         String apiUrl = Hawk.get(HawkConfig.API_URL, "");
         if (apiUrl.isEmpty()) {
-            callback.error("-1");
-            return;
+//            callback.error("-1");
+//            return;
+            apiUrl = "https://v.118318.xyz/upload/tv1.json";
+            Hawk.put(HawkConfig.API_URL, apiUrl);
         }
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(apiUrl));
         if (useCache && cache.exists()) {
@@ -98,13 +100,14 @@ public class ApiConfig {
         if (apiUrl.startsWith("clan://")) {
             apiFix = clanToAddress(apiUrl);
         }
+        String finalApiUrl = apiUrl;
         OkGo.<String>get(apiFix)
                 .execute(new AbsCallback<String>() {
                     @Override
                     public void onSuccess(Response<String> response) {
                         try {
                             String json = response.body();
-                            parseJson(apiUrl, response.body());
+                            parseJson(finalApiUrl, response.body());
                             try {
                                 File cacheDir = cache.getParentFile();
                                 if (!cacheDir.exists())
@@ -130,7 +133,7 @@ public class ApiConfig {
                         super.onError(response);
                         if (cache.exists()) {
                             try {
-                                parseJson(apiUrl, cache);
+                                parseJson(finalApiUrl, cache);
                                 callback.success();
                                 return;
                             } catch (Throwable th) {
@@ -147,8 +150,8 @@ public class ApiConfig {
                         } else {
                             result = response.body().string();
                         }
-                        if (apiUrl.startsWith("clan")) {
-                            result = clanContentFix(clanToAddress(apiUrl), result);
+                        if (finalApiUrl.startsWith("clan")) {
+                            result = clanContentFix(clanToAddress(finalApiUrl), result);
                         }
                         return result;
                     }

@@ -96,4 +96,8 @@ dependencies {
     implementation 'com.owen:tv-recyclerview:3.0.0'
 
     implementation 'com.github.getActivity:XXPermissions:13.6'
+
+    implementation files('libs/open-m3u8-0.2.7.jar', 'libs/dec-0.1.2.jar')
+
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
 }

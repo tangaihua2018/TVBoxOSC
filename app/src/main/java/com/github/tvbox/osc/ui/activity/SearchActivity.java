@@ -206,12 +206,11 @@ public class SearchActivity extends BaseActivity {
      * 拼音联想
      */
     private void loadRec(String key) {
-        OkGo.<String>get("https://s.video.qq.com/smartbox")
-                .params("plat", 2)
-                .params("ver", 0)
-                .params("num", 10)
-                .params("otype", "json")
-                .params("query", key)
+        OkGo.<String>get("https://tv.aiseet.atianqi.com/i-tvbin/qtv_video/search/get_search_smart_box")
+                .params("format", "json")
+                .params("page_num", 0)
+                .params("page_size", 10)
+                .params("key", key)
                 .execute(new AbsCallback<String>() {
                     @Override
                     public void onSuccess(Response<String> response) {
@@ -219,10 +218,13 @@ public class SearchActivity extends BaseActivity {
                             ArrayList<String> hots = new ArrayList<>();
                             String result = response.body();
                             JsonObject json = JsonParser.parseString(result.substring(result.indexOf("{"), result.lastIndexOf("}") + 1)).getAsJsonObject();
-                            JsonArray itemList = json.get("item").getAsJsonArray();
-                            for (JsonElement ele : itemList) {
-                                JsonObject obj = (JsonObject) ele;
-                                hots.add(obj.get("word").getAsString().trim());
+                            JsonArray itemList = json.get("data").getAsJsonObject().get("search_data").getAsJsonObject().get("vecGroupData").getAsJsonArray();
+                            JsonArray groupList =  itemList.get(0).getAsJsonObject().get("group_data").getAsJsonArray();
+                            for (JsonElement ele : groupList) {
+                                JsonObject obj = ele.getAsJsonObject().get("cell_info").getAsJsonObject();
+                                String word = obj.get("title").getAsString().trim();
+                                word = word.replaceAll("<hl>", "").replaceAll("</hl>", "");
+                                hots.add(word);
                             }
                             wordAdapter.setNewData(hots);
                         } catch (Throwable th) {

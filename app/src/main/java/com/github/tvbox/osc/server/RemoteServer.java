@@ -4,12 +4,15 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
+import android.text.TextUtils;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.event.ServerEvent;
+import com.github.tvbox.osc.util.CutM3u8Ads;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.OkGoHelper;
+import com.google.common.net.HttpHeaders;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -41,6 +44,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import fi.iki.elonen.NanoHTTPD;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.dnsoverhttps.OkHttp3Helper;
 
 /**
  * @author pj567
@@ -54,12 +61,14 @@ public class RemoteServer extends NanoHTTPD {
     private DataReceiver mDataReceiver;
     private ArrayList<RequestProcess> getRequestList = new ArrayList<>();
     private ArrayList<RequestProcess> postRequestList = new ArrayList<>();
+    private OkHttpClient client;
 
     public RemoteServer(int port, Context context) {
         super(port);
         mContext = context;
         addGetRequestProcess();
         addPostRequestProcess();
+        client = OkHttp3Helper.getClient();
     }
 
     private void addGetRequestProcess() {
@@ -148,6 +157,14 @@ public class RemoteServer extends NanoHTTPD {
                         rs = new byte[0];
                     }
                     return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);
+                }else if (fileName.endsWith("/m3u8")) {
+                    String url = session.getParms().get("url");
+                    byte[] result = cutAds(url, session.getHeaders());
+                    return NanoHTTPD.newChunkedResponse(
+                            Response.Status.OK,
+                            MIME_PLAINTEXT,
+                            new ByteArrayInputStream(result)
+                    );
                 }
             } else if (session.getMethod() == Method.POST) {
                 Map<String, String> files = new HashMap<String, String>();
@@ -237,6 +254,27 @@ public class RemoteServer extends NanoHTTPD {
         }
         //default page: index.html
         return getRequestList.get(0).doResponse(session, "", null, null);
+    }
+
+    private byte[] cutAds(String url, Map<String, String> headers) {
+        try {
+            if (TextUtils.isEmpty(url)) return new byte[0];
+            okhttp3.Response response = this.client.newCall(new Request.Builder().url(url).headers(getHeader(headers)).build()).execute();
+            if (response.header(HttpHeaders.ACCEPT_RANGES) != null && !url.contains(".m3u8"))
+                return new byte[0];
+            return CutM3u8Ads.cutAds(response.body().bytes(), url);
+        } catch (Throwable ignored) {
+            return new byte[0];
+        }
+    }
+
+    public Headers getHeader(Map<String, String> headers) {
+        Headers.Builder builder = new Headers.Builder();
+        for (Map.Entry<String, String> header : headers.entrySet())
+            if (HttpHeaders.USER_AGENT.equalsIgnoreCase(header.getKey()) || HttpHeaders.REFERER.equalsIgnoreCase(header.getKey()) || HttpHeaders.COOKIE.equalsIgnoreCase(header.getKey()))
+                builder.add(header.getKey(), header.getValue());
+        builder.add(HttpHeaders.RANGE, "bytes=0-");
+        return builder.build();
     }
 
     public void setDataReceiver(DataReceiver receiver) {

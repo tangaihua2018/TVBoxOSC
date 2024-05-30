@@ -5,7 +5,11 @@ import android.text.TextUtils;
 
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.IJKCode;
+import com.github.tvbox.osc.server.ControlManager;
+import com.github.tvbox.osc.util.urlhttp.UrlHttpUtil;
+import com.google.android.exoplayer2.util.UriUtil;
 
+import java.net.URLEncoder;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -52,6 +56,10 @@ public class IjkMediaPlayer extends IjkPlayer {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (path.endsWith(".m3u8")) path = ControlManager.get()
+                .getAddress(true)
+                .concat("m3u8?url=")
+                .concat(URLEncoder.encode(path));
         super.setDataSource(path, headers);
     }
 }
