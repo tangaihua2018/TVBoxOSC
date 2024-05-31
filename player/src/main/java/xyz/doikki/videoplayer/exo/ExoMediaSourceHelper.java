@@ -24,6 +24,7 @@ import com.google.android.exoplayer2.util.Util;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.Map;
 
