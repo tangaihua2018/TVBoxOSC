@@ -22,6 +22,9 @@ out/
 # Gradle files
 .gradle/
 build/
+release/
+
+tvbox.keystore
 
 # Local configuration file (sdk path, etc)
 local.properties
