@@ -15,9 +15,11 @@ import com.github.tvbox.osc.bean.ParseBean;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.util.AdBlocker;
+import com.github.tvbox.osc.util.AssetUtils;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MD5;
+import com.github.tvbox.osc.util.UrlUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -81,9 +83,8 @@ public class ApiConfig {
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         String apiUrl = Hawk.get(HawkConfig.API_URL, "");
         if (apiUrl.isEmpty()) {
-//            callback.error("-1");
-//            return;
-            apiUrl = "https://v.118318.xyz/upload/tv1.json";
+            apiUrl = "assets://" + Constants.API_CONFIG;
+            AssetUtils.localConfigPath(Constants.API_CONFIG);
             Hawk.put(HawkConfig.API_URL, apiUrl);
         }
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(apiUrl));
@@ -96,36 +97,57 @@ public class ApiConfig {
                 th.printStackTrace();
             }
         }
-        String apiFix = apiUrl;
-        if (apiUrl.startsWith("clan://")) {
-            apiFix = clanToAddress(apiUrl);
+
+        if (apiUrl.startsWith("assets://")) {
+            // 解析本地配置
+            String configBuff = AssetUtils.getFileBuf(AssetUtils.localConfigPath(apiUrl.replace("assets://", "")));
+            parseJson(apiUrl, configBuff, cache, callback);
+        } else {
+            // 从服务器拉去配置并解析
+            netGetConfig(apiUrl, cache, callback);
         }
-        String finalApiUrl = apiUrl;
+    }
+
+    /**
+     * 解析api配置
+     */
+    private void parseJson(String apiUrl, String jsonConfig, File cache, LoadConfigCallback callback) {
+        try {
+            parseJson(apiUrl, jsonConfig);
+            try {
+                File cacheDir = cache.getParentFile();
+                if (!cacheDir.exists())
+                    cacheDir.mkdirs();
+                if (cache.exists())
+                    cache.delete();
+                FileOutputStream fos = new FileOutputStream(cache);
+                fos.write(jsonConfig.getBytes("UTF-8"));
+                fos.flush();
+                fos.close();
+            } catch (Throwable th) {
+                th.printStackTrace();
+            }
+            callback.success();
+        } catch (Throwable th) {
+            th.printStackTrace();
+            callback.error("解析配置失败");
+        }
+    }
+
+    /**
+     * 从服务器拉取配置，并解析
+     *
+     * @param apiUrl   接口链接
+     * @param cache    缓存文件
+     * @param callback 回调方法
+     */
+    private void netGetConfig(String apiUrl, File cache, LoadConfigCallback callback) {
+        String apiFix = clanToAddress(apiUrl);
         OkGo.<String>get(apiFix)
                 .execute(new AbsCallback<String>() {
                     @Override
                     public void onSuccess(Response<String> response) {
-                        try {
-                            String json = response.body();
-                            parseJson(finalApiUrl, response.body());
-                            try {
-                                File cacheDir = cache.getParentFile();
-                                if (!cacheDir.exists())
-                                    cacheDir.mkdirs();
-                                if (cache.exists())
-                                    cache.delete();
-                                FileOutputStream fos = new FileOutputStream(cache);
-                                fos.write(json.getBytes("UTF-8"));
-                                fos.flush();
-                                fos.close();
-                            } catch (Throwable th) {
-                                th.printStackTrace();
-                            }
-                            callback.success();
-                        } catch (Throwable th) {
-                            th.printStackTrace();
-                            callback.error("解析配置失败");
-                        }
+                        parseJson(apiUrl, response.body(), cache, callback);
                     }
 
                     @Override
@@ -133,7 +155,7 @@ public class ApiConfig {
                         super.onError(response);
                         if (cache.exists()) {
                             try {
-                                parseJson(finalApiUrl, cache);
+                                parseJson(apiUrl, cache);
                                 callback.success();
                                 return;
                             } catch (Throwable th) {
@@ -150,8 +172,8 @@ public class ApiConfig {
                         } else {
                             result = response.body().string();
                         }
-                        if (finalApiUrl.startsWith("clan")) {
-                            result = clanContentFix(clanToAddress(finalApiUrl), result);
+                        if (apiUrl.startsWith("clan")) {
+                            result = clanContentFix(clanToAddress(apiUrl), result);
                         }
                         return result;
                     }
@@ -260,15 +282,18 @@ public class ApiConfig {
         // 需要使用vip解析的flag
         vipParseFlags = DefaultConfig.safeJsonStringList(infoJson, "flags");
         // 解析地址
-        for (JsonElement opt : infoJson.get("parses").getAsJsonArray()) {
-            JsonObject obj = (JsonObject) opt;
-            ParseBean pb = new ParseBean();
-            pb.setName(obj.get("name").getAsString().trim());
-            pb.setUrl(obj.get("url").getAsString().trim());
-            String ext = obj.has("ext") ? obj.get("ext").getAsJsonObject().toString() : "";
-            pb.setExt(ext);
-            pb.setType(DefaultConfig.safeJsonInt(obj, "type", 0));
-            parseBeanList.add(pb);
+        JsonArray parses = infoJson.getAsJsonArray("parses");
+        if (parses != null) {
+            for (JsonElement opt : parses) {
+                JsonObject obj = (JsonObject) opt;
+                ParseBean pb = new ParseBean();
+                pb.setName(obj.get("name").getAsString().trim());
+                pb.setUrl(obj.get("url").getAsString().trim());
+                String ext = obj.has("ext") ? obj.get("ext").getAsJsonObject().toString() : "";
+                pb.setExt(ext);
+                pb.setType(DefaultConfig.safeJsonInt(obj, "type", 0));
+                parseBeanList.add(pb);
+            }
         }
         // 获取默认解析
         if (parseBeanList != null && parseBeanList.size() > 0) {
@@ -311,14 +336,20 @@ public class ApiConfig {
             th.printStackTrace();
         }
         // 广告地址
-        for (JsonElement host : infoJson.getAsJsonArray("ads")) {
-            AdBlocker.addAdHost(host.getAsString());
+        JsonArray ads = infoJson.getAsJsonArray("ads");
+        if (ads != null) {
+            for (JsonElement host : ads) {
+                AdBlocker.addAdHost(host.getAsString());
+            }
         }
         // IJK解码配置
         boolean foundOldSelect = false;
         String ijkCodec = Hawk.get(HawkConfig.IJK_CODEC, "");
         ijkCodes = new ArrayList<>();
-        for (JsonElement opt : infoJson.get("ijk").getAsJsonArray()) {
+        JsonArray ijkConfig = infoJson.get("ijk") == null || infoJson.get("ijk").isJsonNull() ?
+                new Gson().fromJson(Constants.IJK_DEFAULT_CONFIG, JsonArray.class) :
+                infoJson.get("ijk").getAsJsonArray();
+        for (JsonElement opt : ijkConfig) {
             JsonObject obj = (JsonObject) opt;
             String name = obj.get("group").getAsString();
             LinkedHashMap<String, String> baseOpt = new LinkedHashMap<>();
@@ -484,6 +515,8 @@ public class ApiConfig {
     }
 
     String clanToAddress(String lanLink) {
+        if (lanLink.startsWith("http")) return lanLink;
+
         if (lanLink.startsWith("clan://localhost/")) {
             return lanLink.replace("clan://localhost/", ControlManager.get().getAddress(true) + "file/");
         } else {

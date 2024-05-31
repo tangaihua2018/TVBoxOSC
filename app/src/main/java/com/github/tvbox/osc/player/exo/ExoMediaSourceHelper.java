@@ -1,9 +1,10 @@
-package xyz.doikki.videoplayer.exo;
+package com.github.tvbox.osc.player.exo;
 
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.github.tvbox.osc.server.ControlManager;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
@@ -73,6 +74,11 @@ public final class ExoMediaSourceHelper {
     }
 
     public MediaSource getMediaSource(String uri, Map<String, String> headers, boolean isCache) {
+        if (uri.contains(".m3u8"))
+            uri = ControlManager.get()
+                    .getAddress(true)
+                    .concat("/m3u8?url=")
+                    .concat(URLEncoder.encode(uri));
         Uri contentUri = Uri.parse(uri);
         if ("rtmp".equals(contentUri.getScheme())) {
             return new ProgressiveMediaSource.Factory(new RtmpDataSourceFactory(null))

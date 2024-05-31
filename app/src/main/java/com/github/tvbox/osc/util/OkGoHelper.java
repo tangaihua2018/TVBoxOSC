@@ -34,7 +34,7 @@ import okhttp3.dnsoverhttps.MyOkhttpDownLoader;
 import okhttp3.dnsoverhttps.SSLSocketFactoryCompat;
 import okhttp3.internal.Util;
 import okhttp3.internal.Version;
-import xyz.doikki.videoplayer.exo.ExoMediaSourceHelper;
+import com.github.tvbox.osc.player.exo.ExoMediaSourceHelper;
 
 public class OkGoHelper {
     public static final long DEFAULT_MILLISECONDS = 10000;      //默认的超时时间

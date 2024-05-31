@@ -50,6 +50,10 @@ public class ControlManager {
         return local ? mServer.getLoadAddress() : mServer.getServerAddress();
     }
 
+    public String getAddress(String path) {
+        return getAddress(true) + "/" + path;
+    }
+
     public void startServer() {
         if (mServer != null) {
             return;

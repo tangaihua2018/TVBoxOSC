@@ -1,0 +1,1 @@
+jarsigner -verbose -keystore tvbox.keystore -signedjar release.apk app\build\outputs\apk\release\app-release-unsigned.apk tvbox
