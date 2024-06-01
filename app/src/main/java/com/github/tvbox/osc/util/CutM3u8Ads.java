@@ -48,9 +48,8 @@ public class CutM3u8Ads {
             PlaylistData data = masterPlaylist.getPlaylists().get(0);
             // 拼接绝对路径
             String absUrl = new URI(baseUrl).resolve(data.getUri()).toString();
-            OkHttpClient client = OkHttp3Helper.clientBuild();
             Request request = new Request.Builder().url(absUrl).build();
-            okhttp3.Response response = client.newCall(request).execute();
+            okhttp3.Response response = OkGoHelper.getDefaultClient().newCall(request).execute();
             byte[] res = response.body().bytes();
             return cutAds(res, absUrl);
         }

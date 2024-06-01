@@ -61,14 +61,12 @@ public class RemoteServer extends NanoHTTPD {
     private DataReceiver mDataReceiver;
     private ArrayList<RequestProcess> getRequestList = new ArrayList<>();
     private ArrayList<RequestProcess> postRequestList = new ArrayList<>();
-    private OkHttpClient client;
 
     public RemoteServer(int port, Context context) {
         super(port);
         mContext = context;
         addGetRequestProcess();
         addPostRequestProcess();
-        client = OkHttp3Helper.getClient();
     }
 
     private void addGetRequestProcess() {
@@ -157,7 +155,7 @@ public class RemoteServer extends NanoHTTPD {
                         rs = new byte[0];
                     }
                     return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);
-                }else if (fileName.endsWith("/m3u8")) {
+                } else if (fileName.endsWith("/m3u8")) {
                     String url = session.getParms().get("url");
                     byte[] result = cutAds(url, session.getHeaders());
                     return NanoHTTPD.newChunkedResponse(
@@ -259,7 +257,10 @@ public class RemoteServer extends NanoHTTPD {
     private byte[] cutAds(String url, Map<String, String> headers) {
         try {
             if (TextUtils.isEmpty(url)) return new byte[0];
-            okhttp3.Response response = this.client.newCall(new Request.Builder().url(url).headers(getHeader(headers)).build()).execute();
+            okhttp3.Response response = OkGoHelper
+                    .getDefaultClient()
+                    .newCall(new Request.Builder().url(url).headers(getHeader(headers)).build())
+                    .execute();
             if (response.header(HttpHeaders.ACCEPT_RANGES) != null && !url.contains(".m3u8"))
                 return new byte[0];
             return CutM3u8Ads.cutAds(response.body().bytes(), url);
