@@ -1,6 +1,7 @@
 package com.github.catvod.crawler;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.github.tvbox.osc.util.OkGoHelper;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import okhttp3.Dns;
 
 public abstract class Spider {
+    private static final String TAG="Spider";
 
     public static JSONObject empty = new JSONObject();
 
@@ -83,6 +85,7 @@ public abstract class Spider {
      * @return
      */
     public String playerContent(String flag, String id, List<String> vipFlags) {
+        Log.d(TAG, "flag:"+flag+",id:" + id + ", vipFlags:"+ vipFlags.toString());
         return "";
     }
 

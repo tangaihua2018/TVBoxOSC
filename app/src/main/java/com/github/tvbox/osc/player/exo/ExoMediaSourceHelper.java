@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import com.github.tvbox.osc.server.ControlManager;
+import com.github.tvbox.osc.util.CutM3u8Ads;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
@@ -74,11 +75,7 @@ public final class ExoMediaSourceHelper {
     }
 
     public MediaSource getMediaSource(String uri, Map<String, String> headers, boolean isCache) {
-        if (uri.contains(".m3u8"))
-            uri = ControlManager.get()
-                    .getAddress(true)
-                    .concat("/m3u8?url=")
-                    .concat(URLEncoder.encode(uri));
+        uri = CutM3u8Ads.fixUrlForCutAds(headers, uri);
         Uri contentUri = Uri.parse(uri);
         if ("rtmp".equals(contentUri.getScheme())) {
             return new ProgressiveMediaSource.Factory(new RtmpDataSourceFactory(null))

@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.widget.Toast;
 
 import com.github.tvbox.osc.base.App;
+import com.github.tvbox.osc.server.ControlManager;
 import com.iheartradio.m3u8.Encoding;
 import com.iheartradio.m3u8.Format;
 import com.iheartradio.m3u8.ParseException;
@@ -26,7 +27,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -134,4 +137,16 @@ public class CutM3u8Ads {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
     }
 
+    public static String fixUrlForCutAds(Map<String,String> headers, String uri){
+        // 去广告
+        if (headers != null && headers.size() > 0) {
+            String flag = headers.get("flag");
+            if (uri.endsWith(".m3u8") && flag != null && flag.length() > 0)
+                uri = ControlManager.get()
+                        .getAddress(true)
+                        .concat("m3u8?url=")
+                        .concat(URLEncoder.encode(uri));
+        }
+        return uri;
+    }
 }

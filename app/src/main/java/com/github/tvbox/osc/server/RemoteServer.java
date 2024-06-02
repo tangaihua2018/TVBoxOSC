@@ -15,6 +15,8 @@ import com.github.tvbox.osc.util.OkGoHelper;
 import com.google.common.net.HttpHeaders;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.iheartradio.m3u8.ParseException;
+import com.iheartradio.m3u8.PlaylistException;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -29,6 +31,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -158,6 +161,7 @@ public class RemoteServer extends NanoHTTPD {
                 } else if (fileName.endsWith("/m3u8")) {
                     String url = session.getParms().get("url");
                     byte[] result = cutAds(url, session.getHeaders());
+                    if (result.length == 0) redirect(url, session.getHeaders());
                     return NanoHTTPD.newChunkedResponse(
                             Response.Status.OK,
                             MIME_PLAINTEXT,
@@ -267,6 +271,14 @@ public class RemoteServer extends NanoHTTPD {
         } catch (Throwable ignored) {
             return new byte[0];
         }
+    }
+
+    public static Response redirect(String url, Map<String, String> headers) {
+        Response response = newFixedLengthResponse(Response.Status.REDIRECT, MIME_HTML, "");
+        for (Map.Entry<String, String> entry : headers.entrySet())
+            response.addHeader(entry.getKey(), entry.getValue());
+        response.addHeader(HttpHeaders.LOCATION, url);
+        return response;
     }
 
     public Headers getHeader(Map<String, String> headers) {

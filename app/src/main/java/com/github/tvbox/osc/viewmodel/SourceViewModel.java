@@ -39,8 +39,10 @@ import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -517,6 +519,12 @@ public class SourceViewModel extends ViewModel {
                 } else {
                     result.put("parse", 1);
                     result.put("url", url);
+                }
+
+                if (playFlag != null && playFlag.length() > 0) {
+                    Map<String, String> header = new HashMap<>();
+                    header.put("flag", playFlag);
+                    result.put("header", new Gson().toJson(header));
                 }
                 result.put("playUrl", playUrl);
                 result.put("flag", playFlag);
