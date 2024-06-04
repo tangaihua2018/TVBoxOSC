@@ -137,16 +137,14 @@ public class CutM3u8Ads {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
     }
 
-    public static String fixUrlForCutAds(Map<String,String> headers, String uri){
-        // 去广告
-        if (headers != null && headers.size() > 0) {
-            String flag = headers.get("flag");
-            if (uri.endsWith(".m3u8") && flag != null && flag.length() > 0)
-                uri = ControlManager.get()
-                        .getAddress(true)
-                        .concat("m3u8?url=")
-                        .concat(URLEncoder.encode(uri));
-        }
-        return uri;
+    public static String fixUrlForCutAds(Map<String, String> headers, String uri) {
+        if (headers == null || headers.size() == 0 || !uri.endsWith(".m3u8")) return uri;
+
+        String flag = headers.get("flag");
+        if (!"lzm3u8".equals(flag) && !"ffm3u8".equals(flag) && !"bfzym3u8".equals(flag)) return uri;
+        return ControlManager.get()
+                .getAddress(true)
+                .concat("m3u8?url=")
+                .concat(URLEncoder.encode(uri));
     }
 }
