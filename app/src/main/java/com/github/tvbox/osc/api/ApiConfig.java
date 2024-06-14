@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author pj567
@@ -414,6 +415,8 @@ public class ApiConfig {
                 }
                 liveChannelItem.setChannelSourceNames(sourceNames);
                 liveChannelItem.setChannelUrls(sourceUrls);
+                int playerType = obj.get("playerType") == null ?2:obj.get("playerType").getAsInt();
+                liveChannelItem.setPlayerType(playerType);
                 liveChannelGroup.getLiveChannels().add(liveChannelItem);
             }
             liveChannelGroupList.add(liveChannelGroup);

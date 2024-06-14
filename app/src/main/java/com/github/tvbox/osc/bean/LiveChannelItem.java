@@ -23,6 +23,15 @@ public class LiveChannelItem {
     private ArrayList<String> channelUrls;
     public int sourceIndex = 0;
     public int sourceNum = 0;
+    public int playerType = -1;
+
+    public int getPlayerType() {
+        return playerType;
+    }
+
+    public void setPlayerType(int playerType) {
+        this.playerType = playerType;
+    }
 
     public void setChannelIndex(int channelIndex) {
         this.channelIndex = channelIndex;

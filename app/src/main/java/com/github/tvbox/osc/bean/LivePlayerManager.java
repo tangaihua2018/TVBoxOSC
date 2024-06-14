@@ -41,10 +41,27 @@ public class LivePlayerManager {
         }
     }
 
-    public void getLiveChannelPlayer(VideoView videoView, String channelName) {
+    public void getCustomLiveChannelPlayer(VideoView videoView, int playerType) {
+        try {
+            currentPlayerConfig.put("pl", playerType);
+            currentPlayerConfig.put("ijk", Hawk.get(HawkConfig.IJK_CODEC, "硬解码"));
+            currentPlayerConfig.put("pr", Hawk.get(HawkConfig.PLAY_RENDER, 2));
+            currentPlayerConfig.put("sc", Hawk.get(HawkConfig.PLAY_SCALE, 1));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        PlayerHelper.updateCfg(videoView, currentPlayerConfig);
+    }
+
+    public void getLiveChannelPlayer(VideoView videoView, LiveChannelItem liveChannelItem) {
+        String channelName = liveChannelItem.getChannelName();
+        int playerType = liveChannelItem.getPlayerType();
+
         JSONObject playerConfig = Hawk.get(channelName, null);
         if (playerConfig == null) {
-            if (!currentPlayerConfig.toString().equals(defaultPlayerConfig.toString()))
+            if (playerType >= 0) {
+                getCustomLiveChannelPlayer(videoView, playerType);
+            } else if (!currentPlayerConfig.toString().equals(defaultPlayerConfig.toString()))
                 getDefaultLiveChannelPlayer(videoView);
             return;
         }
@@ -134,7 +151,7 @@ public class LivePlayerManager {
         currentPlayerConfig = playerConfig;
     }
 
-    public void changeLivePlayerScale(@NonNull VideoView videoView, int playerScale, String channelName){
+    public void changeLivePlayerScale(@NonNull VideoView videoView, int playerScale, String channelName) {
         videoView.setScreenScaleType(playerScale);
 
         JSONObject playerConfig = currentPlayerConfig;
